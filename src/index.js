@@ -10,6 +10,7 @@
 import { createMouseCollector } from './signals/mouse.js';
 import { createKeyboardCollector } from './signals/keyboard.js';
 import { createFocusCollector } from './signals/focus.js';
+import { createPeripheralDetector } from './signals/peripheral.js';
 import { createBaseline } from './baseline.js';
 import { createStreamer } from './streamer.js';
 
@@ -21,9 +22,14 @@ import { createStreamer } from './streamer.js';
 
   const baseline = createBaseline();
   const streamer = createStreamer(endpoint, sessionId);
+  const peripheral = createPeripheralDetector();
 
-  function onSample(raw) {
-    // Record into baseline; normalize once warm
+  // Buffer holds samples collected before peripheral context locks.
+  // Flushed (with correct peripheral metadata) once context is known.
+  const pendingBuffer = [];
+  const MAX_BUFFER = 60; // cap at 60 seconds of pre-lock samples
+
+  function buildSample(raw) {
     const normalized = { ...raw };
 
     if (raw.type === 'mouse') {
@@ -52,17 +58,58 @@ import { createStreamer } from './streamer.js';
       }
     }
 
-    streamer.send(normalized);
+    return normalized;
   }
+
+  function stamp(sample) {
+    return {
+      ...sample,
+      peripheral_type: peripheral.type,
+      peripheral_confidence: peripheral.confidence,
+      peripheral_locked: peripheral.locked,
+    };
+  }
+
+  function onSample(raw) {
+    const normalized = buildSample(raw);
+
+    if (!peripheral.locked) {
+      // Hold: buffer until we know the peripheral context
+      if (pendingBuffer.length < MAX_BUFFER) {
+        pendingBuffer.push(normalized);
+      }
+      return;
+    }
+
+    streamer.send(stamp(normalized));
+  }
+
+  // When peripheral context locks, flush buffered samples retroactively
+  peripheral.on('lock', ({ type, confidence }) => {
+    while (pendingBuffer.length) {
+      const sample = pendingBuffer.shift();
+      streamer.send({
+        ...sample,
+        peripheral_type: type,
+        peripheral_confidence: confidence,
+        peripheral_locked: true,
+        retrograde: true, // flag: scored after-the-fact once context was known
+      });
+    }
+  });
 
   const mouse = createMouseCollector(onSample);
   const keyboard = createKeyboardCollector(onSample);
   const focus = createFocusCollector(onSample);
 
   streamer.start();
+  peripheral.start();
   mouse.start();
   keyboard.start();
   focus.start();
 
-  window.flowSensor = { stop() { mouse.stop(); keyboard.stop(); focus.stop(); streamer.stop(); } };
+  window.flowSensor = {
+    get peripheral() { return { type: peripheral.type, confidence: peripheral.confidence }; },
+    stop() { mouse.stop(); keyboard.stop(); focus.stop(); peripheral.stop(); streamer.stop(); },
+  };
 })();
