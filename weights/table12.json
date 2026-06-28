@@ -1,7 +1,9 @@
 {
   "_meta": {
     "source": "Table 12 — thesis study, within-person baseline-relative correlations",
-    "note": "All findings are exploratory at this sample size; stated as directions for a larger study."
+    "note": "All findings are exploratory at this sample size; stated as directions for a larger study.",
+    "version": "0.1.0",
+    "updated_at": "2026-06-28T00:00:00.000Z"
   },
   "signals": {
     "mouse_speed_below_baseline": {

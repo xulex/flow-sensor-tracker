@@ -1,24 +1,41 @@
 /**
- * Affect scorer — applies Table 12 weights to normalized signal z-scores.
- * Returns scores for frustration, load/effort, and engagement dimensions.
+ * Affect scorer — applies weights to normalized signal z-scores.
+ *
+ * Weights are loaded dynamically from the weights file on each call so
+ * in-person experiment updates take effect immediately without restart.
+ * Call setWeightsPath() once at startup; the scorer re-reads the file
+ * on each invocation (the OS caches the inode — cost is negligible).
  */
 
-import weights from '../.././../weights/table12.json' assert { type: 'json' };
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
-const signals = weights.signals;
+let weightsPath = resolve(process.cwd(), '../../weights/table12.json');
+
+export function setWeightsPath(p) {
+  weightsPath = resolve(p);
+}
+
+function loadWeights() {
+  return JSON.parse(readFileSync(weightsPath, 'utf8'));
+}
 
 export function score(normalizedSample) {
+  const weights = loadWeights();
+  const signals = weights.signals;
+
   const result = {
     ts: normalizedSample.ts,
     sessionId: normalizedSample.sessionId,
+    weights_version: weights._meta?.version ?? null,
     dimensions: {},
     raw: normalizedSample,
   };
 
   // Frustration: negative mouse speed drift from baseline
   if (normalizedSample.mouse_speed_z !== undefined && signals.mouse_speed_below_baseline.enabled) {
-    // Negative z-score = speed below baseline = frustration signal
-    result.dimensions.frustration = -normalizedSample.mouse_speed_z * Math.abs(signals.mouse_speed_below_baseline.weight);
+    result.dimensions.frustration =
+      -normalizedSample.mouse_speed_z * Math.abs(signals.mouse_speed_below_baseline.weight);
   }
 
   // Load / effort: travel distance + direction changes deviations
@@ -32,13 +49,14 @@ export function score(normalizedSample) {
 
   // Engagement: keystroke rate
   if (normalizedSample.keystroke_rate_z !== undefined && signals.keystroke_rate.enabled) {
-    result.dimensions.engagement = normalizedSample.keystroke_rate_z * signals.keystroke_rate.weight;
+    result.dimensions.engagement =
+      normalizedSample.keystroke_rate_z * signals.keystroke_rate.weight;
   }
 
-  // Focus: window focus ratio (browser proxy for application-switch rate)
-  // Negative weight — low focus_ratio means more switching = less focus
+  // Focus: window focus ratio (proxy for application-switch rate)
   if (normalizedSample.focus_ratio_z !== undefined && signals.application_switch_rate.enabled) {
-    result.dimensions.focus = normalizedSample.focus_ratio_z * Math.abs(signals.application_switch_rate.weight);
+    result.dimensions.focus =
+      normalizedSample.focus_ratio_z * Math.abs(signals.application_switch_rate.weight);
   }
 
   return result;

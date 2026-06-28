@@ -35,6 +35,14 @@ export function openDb(dbPath = path.join(process.cwd(), 'data', 'flow-sensor.db
 
     CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id);
     CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
+
+    CREATE TABLE IF NOT EXISTS weight_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      version TEXT NOT NULL,
+      saved_at INTEGER NOT NULL,
+      label TEXT,
+      snapshot TEXT NOT NULL
+    );
   `);
 
   return db;
@@ -82,4 +90,21 @@ export function getSessionSummary(sessionId) {
 
 export function getAllSessions() {
   return db.prepare(`SELECT * FROM sessions ORDER BY last_seen DESC`).all();
+}
+
+export function saveWeightVersion(version, snapshot, label = null) {
+  db.prepare(`
+    INSERT INTO weight_versions (version, saved_at, label, snapshot)
+    VALUES (?, ?, ?, ?)
+  `).run(version, Date.now(), label, JSON.stringify(snapshot));
+}
+
+export function getWeightHistory() {
+  return db.prepare(`
+    SELECT id, version, saved_at, label FROM weight_versions ORDER BY saved_at DESC
+  `).all();
+}
+
+export function getWeightVersion(id) {
+  return db.prepare(`SELECT * FROM weight_versions WHERE id = ?`).get(id);
 }
