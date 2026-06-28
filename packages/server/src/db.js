@@ -29,6 +29,7 @@ export function openDb(dbPath = path.join(process.cwd(), 'data', 'flow-sensor.db
       frustration REAL,
       load_effort REAL,
       engagement REAL,
+      focus REAL,
       FOREIGN KEY (session_id) REFERENCES sessions(id)
     );
 
@@ -50,8 +51,8 @@ export function upsertSession(sessionId, siteId) {
 
 export function insertEvent(scored) {
   db.prepare(`
-    INSERT INTO events (session_id, ts, type, payload, frustration, load_effort, engagement)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO events (session_id, ts, type, payload, frustration, load_effort, engagement, focus)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     scored.sessionId,
     scored.ts,
@@ -60,6 +61,7 @@ export function insertEvent(scored) {
     scored.dimensions.frustration ?? null,
     scored.dimensions.load_effort ?? null,
     scored.dimensions.engagement ?? null,
+    scored.dimensions.focus ?? null,
   );
 }
 
@@ -71,6 +73,7 @@ export function getSessionSummary(sessionId) {
       AVG(frustration) AS avg_frustration,
       AVG(load_effort) AS avg_load,
       AVG(engagement) AS avg_engagement,
+      AVG(focus) AS avg_focus,
       MIN(ts) AS started_at,
       MAX(ts) AS last_at
     FROM events WHERE session_id = ?

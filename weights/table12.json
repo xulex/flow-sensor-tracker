@@ -52,8 +52,8 @@
       "robustness": "not_significant",
       "role": "contextual_only",
       "weight": -0.22,
-      "enabled": false,
-      "note": "Not trackable in browser context; contextual only"
+      "enabled": true,
+      "note": "Browser proxy: window focus_ratio (Page Visibility API + blur/focus events). Negative weight — lower focus ratio = more switching = reduced focus."
     },
     "process_file_events": {
       "indexes": [],

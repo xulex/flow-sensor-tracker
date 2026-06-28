@@ -35,5 +35,11 @@ export function score(normalizedSample) {
     result.dimensions.engagement = normalizedSample.keystroke_rate_z * signals.keystroke_rate.weight;
   }
 
+  // Focus: window focus ratio (browser proxy for application-switch rate)
+  // Negative weight — low focus_ratio means more switching = less focus
+  if (normalizedSample.focus_ratio_z !== undefined && signals.application_switch_rate.enabled) {
+    result.dimensions.focus = normalizedSample.focus_ratio_z * Math.abs(signals.application_switch_rate.weight);
+  }
+
   return result;
 }

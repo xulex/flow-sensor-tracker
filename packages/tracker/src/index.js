@@ -9,6 +9,7 @@
 
 import { createMouseCollector } from './signals/mouse.js';
 import { createKeyboardCollector } from './signals/keyboard.js';
+import { createFocusCollector } from './signals/focus.js';
 import { createBaseline } from './baseline.js';
 import { createStreamer } from './streamer.js';
 
@@ -44,15 +45,24 @@ import { createStreamer } from './streamer.js';
       }
     }
 
+    if (raw.type === 'focus') {
+      baseline.record('focus_ratio', raw.focus_ratio);
+      if (baseline.isReady('focus_ratio')) {
+        normalized.focus_ratio_z = baseline.normalize('focus_ratio', raw.focus_ratio);
+      }
+    }
+
     streamer.send(normalized);
   }
 
   const mouse = createMouseCollector(onSample);
   const keyboard = createKeyboardCollector(onSample);
+  const focus = createFocusCollector(onSample);
 
   streamer.start();
   mouse.start();
   keyboard.start();
+  focus.start();
 
-  window.flowSensor = { stop() { mouse.stop(); keyboard.stop(); streamer.stop(); } };
+  window.flowSensor = { stop() { mouse.stop(); keyboard.stop(); focus.stop(); streamer.stop(); } };
 })();
