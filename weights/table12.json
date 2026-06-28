@@ -1,0 +1,82 @@
+{
+  "_meta": {
+    "source": "Table 12 — thesis study, within-person baseline-relative correlations",
+    "note": "All findings are exploratory at this sample size; stated as directions for a larger study."
+  },
+  "signals": {
+    "mouse_speed_below_baseline": {
+      "indexes": ["frustration"],
+      "strength_r": [-0.39, -0.52],
+      "robustness": "durable",
+      "role": "primary_frustration_drift_flag",
+      "weight": -0.455,
+      "enabled": true
+    },
+    "mouse_travel_distance_deviation": {
+      "indexes": ["effort", "load"],
+      "strength_r": [0.58],
+      "robustness": "significant",
+      "role": "load_index",
+      "weight": 0.58,
+      "enabled": true
+    },
+    "mouse_direction_changes_deviation": {
+      "indexes": ["effort", "load"],
+      "strength_r": [0.50],
+      "robustness": "significant",
+      "role": "load_index_corrective_motion",
+      "weight": 0.50,
+      "enabled": true
+    },
+    "keystroke_rate": {
+      "indexes": ["arousal", "engagement"],
+      "strength_r": [0.10, 0.25],
+      "robustness": "most_replicated",
+      "role": "engagement_vs_disengagement",
+      "weight": 0.175,
+      "enabled": true,
+      "note": "Strongest when combined with heart-rate; standalone proxy used here"
+    },
+    "heart_rate_deviation": {
+      "indexes": ["effort"],
+      "strength_r": [0.43],
+      "robustness": "emerged_full_sample",
+      "role": "secondary_effort",
+      "weight": 0.43,
+      "enabled": false,
+      "note": "Requires external HR sensor; disabled by default"
+    },
+    "application_switch_rate": {
+      "indexes": ["focus"],
+      "strength_r": [-0.22],
+      "robustness": "not_significant",
+      "role": "contextual_only",
+      "weight": -0.22,
+      "enabled": false,
+      "note": "Not trackable in browser context; contextual only"
+    },
+    "process_file_events": {
+      "indexes": [],
+      "strength_r": [0],
+      "robustness": "null",
+      "role": "dropped",
+      "weight": 0,
+      "enabled": false,
+      "note": "osquery-derived; dropped from affect instrument"
+    }
+  },
+  "affect_dimensions": {
+    "frustration": {
+      "signals": ["mouse_speed_below_baseline"],
+      "direction": "negative_drift_from_baseline"
+    },
+    "load_effort": {
+      "signals": ["mouse_travel_distance_deviation", "mouse_direction_changes_deviation"],
+      "direction": "positive_deviation"
+    },
+    "engagement": {
+      "signals": ["keystroke_rate"],
+      "direction": "positive"
+    }
+  }
+}

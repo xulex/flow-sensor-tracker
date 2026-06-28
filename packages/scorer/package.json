@@ -1,0 +1,7 @@
+{
+  "name": "@flow-sensor/scorer",
+  "version": "0.1.0",
+  "description": "Affect scoring engine — applies Table 12 weights to normalized signals",
+  "type": "module",
+  "main": "src/index.js"
+}

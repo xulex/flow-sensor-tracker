@@ -1,0 +1,14 @@
+{
+  "name": "flow-sensor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Real-time affective behavioral tracking — drop-in <script> tag powered by UEBA-inspired signal weights",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=packages/tracker",
+    "start": "npm start --workspace=packages/server",
+    "dev": "npm run dev --workspace=packages/server"
+  }
+}
