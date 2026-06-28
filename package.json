@@ -1,0 +1,13 @@
+{
+  "name": "@flow-sensor/tracker",
+  "version": "0.1.0",
+  "description": "Drop-in browser snippet for affective behavioral tracking",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --minify --outfile=dist/flow-sensor.js --format=iife --global-name=FlowSensor"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0"
+  }
+}
