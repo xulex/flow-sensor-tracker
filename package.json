@@ -1,6 +1,11 @@
 {
   "name": "@flow-sensor/tracker",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xulex/flow-sensor-tracker.git"
+  },
+  "license": "MIT",
   "description": "Drop-in browser snippet for affective behavioral tracking",
   "type": "module",
   "main": "src/index.js",

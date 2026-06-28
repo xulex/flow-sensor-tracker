@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "flow-sensor/tracker: browser snippet for real-time affective behavioral sensing"
+abstract: >-
+  A zero-dependency browser script that collects mouse speed, travel distance,
+  direction changes, keystroke rate, and window focus ratio at 1 Hz, builds a
+  per-session personal baseline, and streams z-scored samples for affect scoring.
+  Signal model derived from a master's thesis UEBA repurposing study (N = 13).
+type: software
+authors:
+  - family-names: Amato
+    given-names: Norton
+    orcid: "https://orcid.org/0009-0000-7068-2244"
+license: MIT
+repository-code: "https://github.com/xulex/flow-sensor-tracker"
+version: "0.1.0"
+date-released: "2026-06-28"
+keywords:
+  - affective computing
+  - mouse dynamics
+  - keystroke dynamics
+  - behavioral analytics
+  - flow
+  - human-computer interaction
+references:
+  - type: thesis
+    title: >-
+      I'm Not a Robot: repurposing UEBA telemetry to sense affect and protect
+      Flow in knowledge work
+    authors:
+      - family-names: Amato
+        given-names: Norton
+    institution:
+      name: "Steinbeis University / Berlin School of Creative Leadership (BSCL)"
+    thesis-type: "Master's thesis (eMBA)"
+    year: 2026
+    doi: "10.5281/zenodo.20976219"
