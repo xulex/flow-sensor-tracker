@@ -4,44 +4,53 @@
  * Usage:
  *   <script src="https://your-server/flow-sensor.js"
  *           data-endpoint="https://your-server"
- *           data-site-id="my-site"></script>
+ *           data-site-id="my-site"
+ *           data-disclosure="true"
+ *           data-disclosure-link="https://example.com/privacy"></script>
  */
 
-import { createMouseCollector } from './signals/mouse.js';
+import { createMouseCollector }    from './signals/mouse.js';
 import { createKeyboardCollector } from './signals/keyboard.js';
-import { createFocusCollector } from './signals/focus.js';
+import { createFocusCollector }    from './signals/focus.js';
 import { createPeripheralDetector } from './signals/peripheral.js';
-import { createBaseline } from './baseline.js';
-import { createStreamer } from './streamer.js';
+import { createElementTracker }    from './signals/element.js';
+import { createBaseline }          from './baseline.js';
+import { createStreamer }           from './streamer.js';
+import { maybeShowDisclosure }     from './disclosure.js';
 
 (function () {
   const script = document.currentScript;
   const endpoint = script?.dataset.endpoint || 'http://localhost:3000';
-  const siteId = script?.dataset.siteId || 'default';
+  const siteId   = script?.dataset.siteId   || 'default';
   const sessionId = `${siteId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  const baseline = createBaseline();
-  const streamer = createStreamer(endpoint, sessionId);
-  const peripheral = createPeripheralDetector();
+  maybeShowDisclosure(script);
 
-  // Buffer holds samples collected before peripheral context locks.
-  // Flushed (with correct peripheral metadata) once context is known.
+  const baseline   = createBaseline();
+  const streamer   = createStreamer(endpoint, sessionId);
+  const peripheral = createPeripheralDetector();
+  const element    = createElementTracker();
+
   const pendingBuffer = [];
-  const MAX_BUFFER = 60; // cap at 60 seconds of pre-lock samples
+  const MAX_BUFFER = 60;
 
   function buildSample(raw) {
     const normalized = { ...raw };
 
     if (raw.type === 'mouse') {
-      baseline.record('mouse_speed', raw.avg_speed_px_s);
-      baseline.record('mouse_distance', raw.travel_distance_px);
+      baseline.record('mouse_speed',            raw.avg_speed_px_s);
+      baseline.record('mouse_distance',         raw.travel_distance_px);
       baseline.record('mouse_direction_changes', raw.direction_changes);
 
       if (baseline.isReady('mouse_speed')) {
-        normalized.mouse_speed_z = baseline.normalize('mouse_speed', raw.avg_speed_px_s);
-        normalized.mouse_distance_z = baseline.normalize('mouse_distance', raw.travel_distance_px);
-        normalized.direction_changes_z = baseline.normalize('mouse_direction_changes', raw.direction_changes);
+        normalized.mouse_speed_z        = baseline.normalize('mouse_speed',            raw.avg_speed_px_s);
+        normalized.mouse_distance_z     = baseline.normalize('mouse_distance',         raw.travel_distance_px);
+        normalized.direction_changes_z  = baseline.normalize('mouse_direction_changes', raw.direction_changes);
       }
+
+      // Attach element context to every mouse sample
+      const ctx = element.sample();
+      if (ctx) Object.assign(normalized, ctx);
     }
 
     if (raw.type === 'keyboard') {
@@ -64,9 +73,9 @@ import { createStreamer } from './streamer.js';
   function stamp(sample) {
     return {
       ...sample,
-      peripheral_type: peripheral.type,
+      peripheral_type:       peripheral.type,
       peripheral_confidence: peripheral.confidence,
-      peripheral_locked: peripheral.locked,
+      peripheral_locked:     peripheral.locked,
     };
   }
 
@@ -74,42 +83,38 @@ import { createStreamer } from './streamer.js';
     const normalized = buildSample(raw);
 
     if (!peripheral.locked) {
-      // Hold: buffer until we know the peripheral context
-      if (pendingBuffer.length < MAX_BUFFER) {
-        pendingBuffer.push(normalized);
-      }
+      if (pendingBuffer.length < MAX_BUFFER) pendingBuffer.push(normalized);
       return;
     }
 
     streamer.send(stamp(normalized));
   }
 
-  // When peripheral context locks, flush buffered samples retroactively
   peripheral.on('lock', ({ type, confidence }) => {
     while (pendingBuffer.length) {
-      const sample = pendingBuffer.shift();
       streamer.send({
-        ...sample,
-        peripheral_type: type,
+        ...pendingBuffer.shift(),
+        peripheral_type:       type,
         peripheral_confidence: confidence,
-        peripheral_locked: true,
-        retrograde: true, // flag: scored after-the-fact once context was known
+        peripheral_locked:     true,
+        retrograde:            true,
       });
     }
   });
 
-  const mouse = createMouseCollector(onSample);
+  const mouse    = createMouseCollector(onSample);
   const keyboard = createKeyboardCollector(onSample);
-  const focus = createFocusCollector(onSample);
+  const focus    = createFocusCollector(onSample);
 
   streamer.start();
   peripheral.start();
+  element.start();
   mouse.start();
   keyboard.start();
   focus.start();
 
   window.flowSensor = {
     get peripheral() { return { type: peripheral.type, confidence: peripheral.confidence }; },
-    stop() { mouse.stop(); keyboard.stop(); focus.stop(); peripheral.stop(); streamer.stop(); },
+    stop() { mouse.stop(); keyboard.stop(); focus.stop(); element.stop(); peripheral.stop(); streamer.stop(); },
   };
 })();

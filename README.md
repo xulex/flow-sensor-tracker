@@ -138,6 +138,20 @@ telemetry in your privacy policy. Consult your legal team.
 
 ---
 
+## Research participation
+
+By installing flow-sensor on your site, you participate in an ongoing
+calibration study aimed at validating and expanding the original thesis findings
+to real-world conditions. Your site's data contributes only as **anonymized
+aggregates** (average affect scores per element type) — no sessions, no raw
+signals, no site identification ever leaves your siloed partition in that form.
+
+The researcher (Norton Amato) uses these cross-site aggregates to improve the
+weight model that benefits all users of the instrument. This is disclosed in the
+[Operator Terms](https://github.com/xulex/flow-sensor/blob/main/OPERATOR_TERMS.md).
+
+You are free to stop at any time by removing the script tag.
+
 ## Citation
 
 If you use this in research, please cite the thesis:
