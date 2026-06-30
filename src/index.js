@@ -16,6 +16,7 @@ import { createPeripheralDetector } from './signals/peripheral.js';
 import { createElementTracker }    from './signals/element.js';
 import { createBaseline }          from './baseline.js';
 import { createStreamer }           from './streamer.js';
+import { createClientScorer }      from './scorer.js';
 import { maybeShowDisclosure }     from './disclosure.js';
 
 (function () {
@@ -27,7 +28,8 @@ import { maybeShowDisclosure }     from './disclosure.js';
   maybeShowDisclosure(script);
 
   const baseline   = createBaseline();
-  const streamer   = createStreamer(endpoint, sessionId);
+  const scorer     = createClientScorer();
+  const streamer   = createStreamer(endpoint, sessionId, siteId);
   const peripheral = createPeripheralDetector();
   const element    = createElementTracker();
 
@@ -72,6 +74,7 @@ import { maybeShowDisclosure }     from './disclosure.js';
 
   function stamp(sample) {
     return {
+      ts: Date.now(),
       ...sample,
       peripheral_type:       peripheral.type,
       peripheral_confidence: peripheral.confidence,
@@ -87,18 +90,24 @@ import { maybeShowDisclosure }     from './disclosure.js';
       return;
     }
 
-    streamer.send(stamp(normalized));
+    const stamped = stamp(normalized);
+    // Score locally so affect dimensions are available immediately and
+    // included in the beacon payload — no server round-trip required.
+    const dimensions = scorer.score(stamped);
+    streamer.send(dimensions ? { ...stamped, dimensions, client_scored: true } : stamped);
   }
 
   peripheral.on('lock', ({ type, confidence }) => {
     while (pendingBuffer.length) {
-      streamer.send({
+      const stamped = {
         ...pendingBuffer.shift(),
         peripheral_type:       type,
         peripheral_confidence: confidence,
         peripheral_locked:     true,
         retrograde:            true,
-      });
+      };
+      const dimensions = scorer.score(stamped);
+      streamer.send(dimensions ? { ...stamped, dimensions, client_scored: true } : stamped);
     }
   });
 
